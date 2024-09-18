@@ -1,0 +1,142 @@
+Hi all
+we are working together
+first line
+
+how are you
+
+i am fine here
+
+all are good there ah
+
+i am rocking
+good to go a way araound
+
+==========================
+
+create docker file:
+
+FROM ubuntu
+MAINTAINER greens
+RUN apt-get update -y
+RUN apt-get install git -y
+
+docker build -t centosvim:v1.0 . ----to build container
+
+docker run -itd --name=test3 centosvim:v1.0
+
+add wget and vim in Dockerfile and build and run again
+
+==================================================================
+For OPENSSH
+
+
+FROM ubuntu:latest
+RUN apt update && apt install  openssh-server sudo -y
+RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 1000 test 
+RUN  echo 'test:test' | chpasswd
+RUN service ssh start
+EXPOSE 22
+CMD ["/usr/sbin/sshd","-D"]
+
+docker build -t sshd:v1.0 .
+docker run -itd --name test -p "2222:22" sshd:v1.0 
+
+====================================================================
+for apache:
+
+FROM ubuntu
+MAINTAINER greens
+RUN apt-get update && apt-get install -y apache2
+RUN mkdir /var/run/apache2
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+ENV APACHE_RUN_DIR /var/run/apache2
+EXPOSE 80
+CMD ["/usr/sbin/apache2", "-D", "FOREGROUND"]
+
+docker run -d -p "8085:80" --name=webserver5 apache:v1.0
+
+mounting the volume:
+create dir /opt/www
+echo "welcome to gt" > /opt/www/index.html
+docker run -d -p "8085:80" --name=webserver5 -v "/opt/www:/var/www/html" apache:v1.0
+ docker run -itd --name webserver -p "8085:80" -v "/root/deploy:/var/www/html" apache2:v1.0
+
+
+Create Volume
+ docker volume create my-vol
+ docker inspect my-vol  -----> shows the mount path
+ docker run -itd --name volcontainer --mount source=my-vol,destination=/usr/local/htdocs apache2:v1.0
+
+
+==============================================================
+
+
+FROM ubuntu
+MAINTAINER greens
+RUN apt-get update
+RUN apt-get install supervisor apache2 openssh-server -y
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN echo 'root:root123' | chpasswd
+RUN mkdir /var/run/sshd /var/run/apache2
+RUN sed -i '/\[supervisord\]/a nodaemon=true' /etc/supervisor/supervisord.conf
+COPY myservice.conf /etc/supervisor/conf.d/
+EXPOSE 80 22
+CMD ["supervisord"]
+
+
+=====
+create myservice.conf 
+
+[[program:sshd]
+command=/usr/sbin/sshd -D
+
+[program:apache2]
+command=/bin/bash -c "source /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND"
+
+
+==============
+
+docker run -d -p "2323:22" -p "8181:80" supervisor:v1.0
+
+supervisorctl status apache2
+
+supervisorctl
+================================
+docker run -d -p "8080:80" -v /var/log/apache2 --name=webserver1 apache:v1.0
+
+docker run -d -p "2222:22" --volumes-from webserver1 sshd:v1.0
+=================================================
+
+docker run -d -name db mysql:5.5
+
+docker run -d -e MYSQL_ROOT_PASSWORD=redhat123 --name db mysql:5.5
+
+docker run -t -i --link db:MYVARS(u can keep any name) ubuntu /bin/bash
+
+env | grep MYVARS---inside container execute this
+MYVARS_ENV_MYSQL_ROOT_PASSWORD=redhat123
+MYVARS_PORT=tcp://172.17.0.5:3306
+MYVARS_ENV_GOSU_VERSION=1.7
+MYVARS_ENV_MYSQL_VERSION=5.5.61
+MYVARS_PORT_3306_TCP_ADDR=172.17.0.5
+MYVARS_ENV_MYSQL_MAJOR=5.5
+MYVARS_NAME=/vigilant_shannon/MYVARS
+MYVARS_PORT_3306_TCP_PROTO=tcp
+MYVARS_PORT_3306_TCP_PORT=3306
+MYVARS_PORT_3306_TCP=tcp://172.17.0.5:3306
+
+
+docker run --rm --link db:MYVARS ubuntu env---- for temporary
+
+
+docker run -d --name myweb-server --link db:mysql(wordpress mysql variable) -p "8080:80" wordpress
+
+======
+FROM centos
+MAINTAINER greens
+RUN cd /etc/yum.repos.d/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+RUN yum install vim wget -y
