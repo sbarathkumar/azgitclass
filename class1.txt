@@ -1,5 +1,5 @@
 barath
-<<<<<<< HEAD
-revathy
-saai krithik
+revathy barath
+saai krithik barath
+yuvasre barath
 game over
